@@ -1,0 +1,87 @@
+/* ============================================================
+   GitForest — Controle da Floresta
+   ============================================================ */
+
+.forest-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  max-width: min(420px, calc(100vw - 40px));
+  padding: 12px 16px;
+  background: var(--color-surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.forest-panel__action {
+  padding: 9px 16px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: rgba(255, 140, 66, 0.18);
+  border: 1px solid rgba(255, 140, 66, 0.45);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.forest-panel__action:hover:not(:disabled) {
+  background: rgba(255, 140, 66, 0.3);
+  transform: translateY(-1px);
+}
+
+.forest-panel__action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.forest-panel__status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.forest-panel__line {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.forest-panel__line .is-error {
+  color: #ff8a7a;
+}
+
+.forest-panel__warn {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.forest-panel__hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  max-width: 340px;
+}
+
+.forest-panel__clear {
+  padding: 5px 12px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.forest-panel__clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+}

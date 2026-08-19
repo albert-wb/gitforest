@@ -1,0 +1,197 @@
+/* ============================================================
+   GitForest — Florestas por País
+   ============================================================ */
+
+/* Quarto botão da coluna da direita, acima do de estilo (124), atmosfera
+   (72) e token (20). */
+.country-button {
+  position: fixed;
+  bottom: 176px;
+  right: 20px;
+  z-index: 90;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.country-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+/* ---------- Gaveta de seleção ---------- */
+
+.country-picker {
+  position: fixed;
+  bottom: 176px;
+  right: 72px;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100vw - 40px));
+  max-height: min(60vh, 460px);
+  padding: 14px;
+  background: var(--color-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.country-picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.country-picker__close {
+  width: 24px;
+  height: 24px;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--color-text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.country-picker__close:hover {
+  color: var(--color-text);
+}
+
+.country-picker__about {
+  margin: 8px 0 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--color-text-dim);
+}
+
+.country-picker__about a {
+  color: var(--color-accent, #ff8c42);
+}
+
+.country-picker__search {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.country-picker__search:focus {
+  border-color: rgba(255, 140, 66, 0.5);
+}
+
+.country-picker__list {
+  /* A lista tem mais de cem países: a rolagem fica dentro da gaveta, e não
+     na página, que é um canvas de tela cheia. */
+  flex: 1;
+  overflow-y: auto;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.country-picker__item {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  text-align: left;
+  color: var(--color-text-dim);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.country-picker__item:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.country-picker__item.is-current {
+  color: var(--color-accent, #ff8c42);
+  background: rgba(255, 140, 66, 0.12);
+}
+
+.country-picker__loading,
+.country-picker__empty {
+  padding: 12px 4px;
+  font-size: 12.5px;
+  color: var(--color-text-dim);
+}
+
+/* ---------- Situação do país em exibição ---------- */
+
+.country-status {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: min(320px, calc(100vw - 40px));
+  padding: 11px 14px;
+  background: var(--color-surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.country-status__line {
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+.country-status__hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-dim);
+  opacity: 0.75;
+}
+
+.country-status .is-error {
+  color: #ff8080;
+}
+
+.country-status__clear {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  color: var(--color-text-dim);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.country-status__clear:hover {
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.28);
+}

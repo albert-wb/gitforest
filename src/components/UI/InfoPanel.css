@@ -1,0 +1,301 @@
+/* GitForest — InfoPanel Styles */
+
+.info-panel {
+  position: fixed;
+  top: 90px;
+  left: 20px;
+  z-index: 90;
+  max-width: 300px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  background: rgba(15, 15, 30, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.info-panel.collapsed {
+  max-width: 48px;
+  overflow: hidden;
+}
+
+.info-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.info-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.info-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+/* Toggle Button */
+.info-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.info-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s;
+}
+
+.info-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.collapsed .info-toggle {
+  position: static;
+  margin: 10px;
+}
+
+/* Content */
+.info-content {
+  padding: 20px;
+  animation: fadeInPanel 0.4s ease-out;
+}
+
+@keyframes fadeInPanel {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-right: 32px;
+}
+
+.info-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 180, 100, 0.3);
+  flex-shrink: 0;
+}
+
+.info-name-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.info-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-login {
+  font-size: 13px;
+  color: rgba(255, 180, 100, 0.6);
+  font-weight: 400;
+}
+
+.info-bio {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+  margin: 0 0 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Stats */
+.info-stats {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.stat-value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* Meta (data de criação) */
+.info-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.meta-icon {
+  font-size: 14px;
+}
+
+/* Section Titles */
+.info-section-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+}
+
+/* Languages */
+.info-languages {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.language-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.language-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.language-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+}
+
+.language-name {
+  color: rgba(255, 255, 255, 0.7);
+  flex: 1;
+}
+
+.language-count {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Repos */
+.info-repos {
+  margin-bottom: 8px;
+}
+
+.repo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.repo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  cursor: default;
+}
+
+.repo-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.repo-item.dead {
+  opacity: 0.5;
+}
+
+.repo-color-indicator {
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.repo-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.repo-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo-stats-mini {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.repo-dead-badge {
+  font-size: 14px;
+  flex-shrink: 0;
+}

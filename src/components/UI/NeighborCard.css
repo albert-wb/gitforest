@@ -1,0 +1,234 @@
+/* ============================================================
+   GitForest — Cartão do Vizinho
+   ============================================================ */
+
+.neighbor-card {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  z-index: 120;
+  width: min(320px, calc(100vw - 40px));
+  padding: 18px;
+  background: var(--color-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  animation: neighbor-in 0.22s ease-out;
+}
+
+@keyframes neighbor-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(14px);
+  }
+}
+
+/* Em tela estreita o cartão vira uma folha na base: encostado à direita ele
+   cobriria a árvore que o usuário acabou de clicar. */
+@media (max-width: 720px) {
+  .neighbor-card {
+    top: auto;
+    bottom: 16px;
+    right: 50%;
+    transform: translateX(50%);
+    animation: none;
+  }
+}
+
+.neighbor-card__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-text-dim);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.neighbor-card__close:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.neighbor-card__head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-right: 24px;
+}
+
+.neighbor-card__avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+}
+
+.neighbor-card__ident {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.neighbor-card__name {
+  font-size: 15px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.neighbor-card__login {
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+.neighbor-card__degree {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--color-accent, #ff8c42);
+}
+
+.neighbor-card__bio {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-dim);
+  /* Bios de GitHub variam de uma palavra a um parágrafo; sem o corte o
+     cartão mudava de altura a cada clique. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.neighbor-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.neighbor-card__stats dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-dim);
+}
+
+.neighbor-card__stats dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.neighbor-card__tree {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+.neighbor-card__lang-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.neighbor-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.neighbor-card__explore {
+  padding: 9px 14px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: rgba(255, 140, 66, 0.18);
+  border: 1px solid rgba(255, 140, 66, 0.45);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.neighbor-card__explore:hover:not(:disabled) {
+  background: rgba(255, 140, 66, 0.3);
+  transform: translateY(-1px);
+}
+
+.neighbor-card__explore:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.neighbor-card__link {
+  padding: 8px 14px;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--color-text-dim);
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.neighbor-card__link:hover {
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ---------- Prévia flutuante sobre a árvore (drei <Html>) ---------- */
+
+.forest-hover {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  background: rgba(10, 10, 25, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  /* A etiqueta é desenhada por cima do canvas e não deve roubar o cursor,
+     senão ela própria dispararia o `pointerleave` da árvore e piscaria. */
+  pointer-events: none;
+  user-select: none;
+}
+
+.forest-hover__avatar {
+  border-radius: 50%;
+}
+
+.forest-hover__login {
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.forest-hover__degree {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
