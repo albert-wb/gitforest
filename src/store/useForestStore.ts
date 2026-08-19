@@ -96,14 +96,17 @@ interface PlantTarget {
  * Raio, ao redor do ponto para onde a câmera olha, dentro do qual as árvores
  * são carregadas.
  *
- * O número sai da densidade e do tempo de carga, não do gosto. Com o
- * espaçamento de `countryLayout` cada árvore ocupa cerca de 19 unidades
- * quadradas, então um disco de raio 28 comporta por volta de 130 árvores.
- * Aumentar o raio sem aumentar o espaçamento multiplica isso pela **área**:
- * ir a 34 já pediria 190 árvores, e como a API entrega quatro perfis por
- * requisição, cada árvore a mais é tempo de espera visível.
+ * Quantas árvores isso significa sai direto de `countryLayout`:
+ * `((RAIO − INNER)/SPACING)²`, ou seja `((40 − 8)/2,5)² ≈ 164`.
+ *
+ * O teto vem de medição, não de palpite. Uma árvore de fundo custa por volta
+ * de 11 mil triângulos, então 164 delas somam ~1,8 milhão — mais a paisagem e
+ * a grama, a cena fica na casa dos 2,2 milhões, que é o que uma GPU modesta
+ * desenha com folga dado que os shaders aqui são simples e tudo vai em poucas
+ * chamadas de desenho. Dobrar o raio **quadruplicaria** a contagem, porque o
+ * que cresce é a área.
  */
-const LOAD_RADIUS = 28;
+const LOAD_RADIUS = 40;
 
 /**
  * Além deste raio as árvores são descarregadas.
@@ -112,7 +115,7 @@ const LOAD_RADIUS = 28;
  * dois iguais, uma árvore na fronteira entraria e sairia a cada tremida da
  * câmera, e cada entrada custa uma ida à rede e uma geração no worker.
  */
-const UNLOAD_RADIUS = 42;
+const UNLOAD_RADIUS = 56;
 
 /** Teto absoluto de árvores vivas, caso a densidade suba. */
 const MAX_LIVE = 240;
@@ -278,6 +281,7 @@ export const useForestStore = create<ForestStore>((set, get) => ({
           if (friends?.session === mine) friends.profiles.push(...users);
           void plantProfiles(users, targets, mine);
         },
+        STREAM_CONCURRENCY,
       );
 
       if (session !== mine) return;

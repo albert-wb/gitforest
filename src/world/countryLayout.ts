@@ -35,17 +35,27 @@ export interface CountryPlacement {
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180);
 
 /** Raio livre no centro, onde fica a árvore em foco. */
-const INNER = 9;
+const INNER = 8;
 
 /**
- * Espaçamento entre árvores consecutivas na espiral.
+ * Constante de espaçamento da espiral.
  *
- * Com raiz quadrada, este número é o lado aproximado da célula que cada
- * árvore ocupa. Novecentas contas a 4,4 unidades ocupam um círculo de ~140
- * de raio — dentro do terreno (que vai a 320) e dentro do alcance da neblina,
- * de modo que a floresta some no horizonte em vez de terminar num corte.
+ * ⚠️ **Não é a distância entre vizinhas.** Com `raio = INNER + S·√i`, o número
+ * de árvores dentro de um raio R é `((R − INNER)/S)²`, o que dá uma densidade
+ * de `1/(πS²)` árvores por unidade quadrada — ou seja, a distância média entre
+ * vizinhas é `S·√π ≈ 1,77·S`.
+ *
+ * Ter confundido as duas coisas custou caro: com `S = 4,4` as árvores ficavam
+ * a quase oito unidades umas das outras, e o raio de carga de 28 continha
+ * dezenove árvores em vez das cento e trinta que a conta errada previa. A
+ * floresta parecia limitada por um teto artificial quando na verdade estava
+ * apenas rala.
+ *
+ * Com 2,5, a distância média fica em ~4,4 unidades — próxima do espaçamento
+ * mínimo da floresta de amizades — e as 789 contas do Brasil ocupam um círculo
+ * de 78 de raio, bem dentro do terreno e do alcance da neblina.
  */
-const SPACING = 4.4;
+const SPACING = 2.5;
 
 /** Acima deste declive a árvore ficaria pendurada na encosta. */
 const MAX_SLOPE = 0.4;

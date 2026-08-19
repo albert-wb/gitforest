@@ -68,9 +68,16 @@ const PROFILE_CONCURRENCY = 3;
  */
 export const STREAM_CONCURRENCY = 5;
 
-/** Quantos perfis buscar em cada grau. */
-export const FIRST_DEGREE_LIMIT = 24;
-export const SECOND_DEGREE_LIMIT = 48;
+/**
+ * Quantos perfis buscar em cada grau.
+ *
+ * O limite não é técnico, é de paciência: são quatro perfis por requisição, e
+ * cada árvore a mais é espera. Com a concorrência de `STREAM_CONCURRENCY` a
+ * floresta de 112 árvores fecha em torno de meio minuto, e as primeiras já
+ * estão de pé nos primeiros segundos.
+ */
+export const FIRST_DEGREE_LIMIT = 32;
+export const SECOND_DEGREE_LIMIT = 80;
 
 /** Abaixo disto a interseção não é confiável e vale mais usar `following`. */
 const MIN_MUTUALS = 3;

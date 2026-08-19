@@ -21,15 +21,29 @@
  * Os talos são agrupados em tufos e organizados em tiles, cada tile um
  * `InstancedMesh` com bounding sphere real — assim o frustum culling funciona,
  * em vez de ser desligado.
+ *
+ * ## O campo acompanha a câmera
+ *
+ * Os tiles não formam um campo fixo ao redor da origem: eles formam uma
+ * **janela** que anda junto com o ponto para onde a câmera olha. Com um campo
+ * fixo, bastava arrastar a cena com o botão direito para sair da grama e
+ * encontrar terreno pelado — e a única saída seria aumentar o raio, o que
+ * multiplica o custo pela **área** para cobrir um lugar onde ninguém está
+ * olhando na maior parte do tempo.
+ *
+ * Isso só é possível porque o conteúdo de um tile depende exclusivamente das
+ * suas coordenadas de grade (a seed é derivada de `ti`/`tj`). Um tile gerado
+ * quando a câmera passa por ali é idêntico ao que seria gerado ao voltar, de
+ * modo que caminhar de ida e volta não muda a paisagem.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrain } from '../../world/terrain';
 import { getAtmosphere, type AtmospherePreset } from '../../world/atmosphere';
 import { useSceneStore } from '../../store/useSceneStore';
-import { createRNG, clamp01, lerp } from '../../utils/math';
+import { createRNG, lerp } from '../../utils/math';
 
 // ============================================================
 // Parâmetros
@@ -37,12 +51,37 @@ import { createRNG, clamp01, lerp } from '../../utils/math';
 
 const SEED = 77_311;
 
-/** Raio coberto por grama. Além disso, a cor do próprio terreno assume. */
-const FIELD_RADIUS = 50;
-const TILE_SIZE = 25;
+const TILE_SIZE = 24;
 
-/** Tufos por tile no centro do campo (cai com a distância). */
-const TUFTS_PER_TILE = 950;
+/**
+ * Anéis de tiles ao redor do tile central: 2 dá uma grade 5x5, ou seja um
+ * campo de 120 unidades de lado sempre centrado no que se está olhando.
+ *
+ * Cada anel a mais custa o **perímetro** da grade, não um tile: passar de 2
+ * para 3 vai de 25 para 49 tiles.
+ */
+const TILE_RING = 2;
+
+/**
+ * Tufos por tile.
+ *
+ * Uniforme, sem queda com a distância. A versão anterior ralava a grama longe
+ * da origem, o que fazia sentido quando o campo era fixo e a câmera vivia no
+ * centro dele; com a janela seguindo a câmera, "longe" passou a ser relativo a
+ * um centro móvel — e densidade que depende de um centro móvel significa que o
+ * tile muda de conteúdo quando a grade desliza, o que aparece como grama
+ * piscando no chão.
+ */
+const TUFTS_PER_TILE = 560;
+
+/**
+ * Tiles construídos por quadro, no máximo.
+ *
+ * Montar um tile são milhares de consultas ao terreno e outras tantas
+ * quaternions; fazer os cinco de uma fileira nova no mesmo quadro produz um
+ * engasgo visível justamente enquanto a pessoa arrasta a cena.
+ */
+const TILES_POR_QUADRO = 2;
 /** Talos por tufo — agrupar lê muito melhor que espalhar uniformemente. */
 const BLADES_PER_TUFT = 5;
 const TUFT_SPREAD = 0.26;
@@ -211,11 +250,16 @@ interface TileData {
   phases: Float32Array;
 }
 
-function buildTiles(): TileData[] {
+/**
+ * Constrói um tile pelas suas coordenadas de grade.
+ *
+ * Determinístico: a seed sai de `ti`/`tj`, então o mesmo par sempre produz a
+ * mesma grama. É o que permite descartar e reconstruir tiles conforme a
+ * câmera anda sem que a paisagem mude por baixo.
+ */
+function buildTile(ti: number, tj: number): TileData | null {
   const terrain = getTerrain();
-  const tiles: TileData[] = [];
 
-  const half = Math.ceil(FIELD_RADIUS / TILE_SIZE);
   const dummy = new THREE.Object3D();
   const up = new THREE.Vector3(0, 1, 0);
   const normal = new THREE.Vector3();
@@ -225,85 +269,72 @@ function buildTiles(): TileData[] {
   const qYaw = new THREE.Quaternion();
   const color = new THREE.Color();
 
-  for (let ti = -half; ti < half; ti++) {
-    for (let tj = -half; tj < half; tj++) {
-      const originX = (ti + 0.5) * TILE_SIZE;
-      const originZ = (tj + 0.5) * TILE_SIZE;
-      const distToCenter = Math.hypot(originX, originZ);
-      if (distToCenter > FIELD_RADIUS + TILE_SIZE) continue;
+  const originX = (ti + 0.5) * TILE_SIZE;
+  const originZ = (tj + 0.5) * TILE_SIZE;
 
-      // Seed por tile: o conteúdo de um tile não depende da ordem de geração
-      const rng = createRNG(SEED + ti * 7919 + tj * 104_729);
+  const rng = createRNG(SEED + ti * 7919 + tj * 104_729);
 
-      // Densidade cai com a distância — a câmera vive perto da árvore
-      const density = lerp(1, 0.4, clamp01(distToCenter / FIELD_RADIUS));
-      const tuftCount = Math.round(TUFTS_PER_TILE * density);
-      const capacity = tuftCount * BLADES_PER_TUFT;
+  const capacity = TUFTS_PER_TILE * BLADES_PER_TUFT;
+  const matrices = new Float32Array(capacity * 16);
+  const tints = new Float32Array(capacity * 3);
+  const phases = new Float32Array(capacity);
+  let written = 0;
 
-      const matrices = new Float32Array(capacity * 16);
-      const tints = new Float32Array(capacity * 3);
-      const phases = new Float32Array(capacity);
-      let written = 0;
+  for (let t = 0; t < TUFTS_PER_TILE; t++) {
+    const tuftX = originX + (rng() - 0.5) * TILE_SIZE;
+    const tuftZ = originZ + (rng() - 0.5) * TILE_SIZE;
 
-      for (let t = 0; t < tuftCount; t++) {
-        const tuftX = originX + (rng() - 0.5) * TILE_SIZE;
-        const tuftZ = originZ + (rng() - 0.5) * TILE_SIZE;
+    // Rejeições avaliadas por tufo, não por talo — 5x mais barato
+    if (Math.hypot(tuftX, tuftZ) < TRUNK_CLEARANCE) continue;
+    if (terrain.slopeAt(tuftX, tuftZ) > MAX_SLOPE) continue;
 
-        // Rejeições avaliadas por tufo, não por talo — 4x mais barato
-        if (Math.hypot(tuftX, tuftZ) < TRUNK_CLEARANCE) continue;
-        if (terrain.slopeAt(tuftX, tuftZ) > MAX_SLOPE) continue;
+    // A cor do solo naquele ponto, puxada para verde de folha
+    const [gr, gg, gb] = terrain.colorAt(tuftX, tuftZ);
+    color.setRGB(gr, gg, gb).lerp(GRASS_GREEN, GRASS_GREEN_MIX);
 
-        // A cor do solo naquele ponto, puxada para verde de folha
-        const [gr, gg, gb] = terrain.colorAt(tuftX, tuftZ);
-        color.setRGB(gr, gg, gb).lerp(GRASS_GREEN, GRASS_GREEN_MIX);
+    for (let b = 0; b < BLADES_PER_TUFT; b++) {
+      const x = tuftX + (rng() - 0.5) * TUFT_SPREAD;
+      const z = tuftZ + (rng() - 0.5) * TUFT_SPREAD;
+      const y = terrain.heightAt(x, z);
 
-        for (let b = 0; b < BLADES_PER_TUFT; b++) {
-          const x = tuftX + (rng() - 0.5) * TUFT_SPREAD;
-          const z = tuftZ + (rng() - 0.5) * TUFT_SPREAD;
-          const y = terrain.heightAt(x, z);
+      const n = terrain.normalAt(x, z);
+      normal.set(n[0], n[1], n[2]);
 
-          const n = terrain.normalAt(x, z);
-          normal.set(n[0], n[1], n[2]);
+      qTerrain.setFromUnitVectors(up, normal);
+      qTilt.slerpQuaternions(identity, qTerrain, TERRAIN_ALIGNMENT);
+      qYaw.setFromAxisAngle(up, rng() * Math.PI * 2);
 
-          qTerrain.setFromUnitVectors(up, normal);
-          qTilt.slerpQuaternions(identity, qTerrain, TERRAIN_ALIGNMENT);
-          qYaw.setFromAxisAngle(up, rng() * Math.PI * 2);
+      const height = lerp(BLADE_MIN_HEIGHT, BLADE_MAX_HEIGHT, rng());
+      const width = 0.8 + rng() * 0.45;
 
-          const height = lerp(BLADE_MIN_HEIGHT, BLADE_MAX_HEIGHT, rng());
-          const width = 0.8 + rng() * 0.45;
+      // Posição relativa ao tile: mantém as matrizes em números pequenos
+      dummy.position.set(x - originX, y, z - originZ);
+      dummy.quaternion.copy(qTilt).multiply(qYaw);
+      dummy.scale.set(width, height, width);
+      dummy.updateMatrix();
+      dummy.matrix.toArray(matrices, written * 16);
 
-          // Posição relativa ao tile: mantém as matrizes em números pequenos
-          dummy.position.set(x - originX, y, z - originZ);
-          dummy.quaternion.copy(qTilt).multiply(qYaw);
-          dummy.scale.set(width, height, width);
-          dummy.updateMatrix();
-          dummy.matrix.toArray(matrices, written * 16);
+      // Variação de brilho por talo, senão o tufo vira uma mancha chapada
+      const jitter = 0.82 + rng() * 0.36;
+      tints[written * 3] = color.r * jitter;
+      tints[written * 3 + 1] = color.g * jitter;
+      tints[written * 3 + 2] = color.b * jitter;
 
-          // Variação de brilho por talo, senão o tufo vira uma mancha chapada
-          const jitter = 0.82 + rng() * 0.36;
-          tints[written * 3] = color.r * jitter;
-          tints[written * 3 + 1] = color.g * jitter;
-          tints[written * 3 + 2] = color.b * jitter;
-
-          phases[written] = rng() * Math.PI * 2;
-          written++;
-        }
-      }
-
-      if (written === 0) continue;
-
-      tiles.push({
-        key: `${ti}_${tj}`,
-        origin: [originX, 0, originZ],
-        count: written,
-        matrices: matrices.subarray(0, written * 16),
-        tints: tints.subarray(0, written * 3),
-        phases: phases.subarray(0, written),
-      });
+      phases[written] = rng() * Math.PI * 2;
+      written++;
     }
   }
 
-  return tiles;
+  if (written === 0) return null;
+
+  return {
+    key: `${ti}_${tj}`,
+    origin: [originX, 0, originZ],
+    count: written,
+    matrices: matrices.subarray(0, written * 16),
+    tints: tints.subarray(0, written * 3),
+    phases: phases.subarray(0, written),
+  };
 }
 
 // ============================================================
@@ -410,11 +441,101 @@ function createGrassUniforms() {
   ]);
 }
 
+/**
+ * Cache de tiles já construídos, em escopo de módulo.
+ *
+ * Fora da store e fora do componente porque o conteúdo é função pura das
+ * coordenadas de grade: caminhar de ida e volta reaproveita o que já foi
+ * calculado, e nada disso precisa provocar renderização.
+ */
+const cacheTiles = new Map<string, TileData | null>();
+
+/** Coordenada de grade de um ponto do mundo. */
+function celula(v: number): number {
+  return Math.floor(v / TILE_SIZE);
+}
+
 export function Grass() {
   const atmosphereId = useSceneStore((s) => s.atmosphere);
   const preset = useMemo(() => getAtmosphere(atmosphereId), [atmosphereId]);
 
-  const tiles = useMemo(() => buildTiles(), []);
+  const controls = useThree((s) => s.controls) as {
+    target?: THREE.Vector3;
+  } | null;
+  const camera = useThree((s) => s.camera);
+
+  const [tiles, setTiles] = useState<TileData[]>([]);
+
+  /**
+   * Centro da grade na última reavaliação, para só reagir quando muda.
+   *
+   * Começa em `NaN` de propósito: qualquer comparação com `NaN` é falsa, o que
+   * força a primeira avaliação a montar a fila. Inicializado em `[0, 0]`, o
+   * primeiro quadro achava que já estava no lugar certo e a grade nunca era
+   * preenchida — sobrava a grama que tivesse sido semeada à mão.
+   */
+  const centro = useRef<[number, number]>([NaN, NaN]);
+  /** Tiles que faltam construir, em ordem de proximidade do centro. */
+  const fila = useRef<[number, number][]>([]);
+
+  /**
+   * Publica os tiles da janela atual.
+   *
+   * A comparação com o estado anterior evita renderizar de novo quando nada
+   * mudou — este caminho é percorrido a cada quadro em que a fila anda.
+   */
+  const publicar = useCallback((ci: number, cj: number) => {
+    const visiveis: TileData[] = [];
+    for (let di = -TILE_RING; di <= TILE_RING; di++) {
+      for (let dj = -TILE_RING; dj <= TILE_RING; dj++) {
+        const t = cacheTiles.get(`${ci + di}_${cj + dj}`);
+        if (t) visiveis.push(t);
+      }
+    }
+    setTiles((anterior) =>
+      anterior.length === visiveis.length &&
+      anterior.every((t, i) => t === visiveis[i])
+        ? anterior
+        : visiveis,
+    );
+  }, []);
+
+  useFrame(() => {
+    const alvo = controls?.target;
+    const px = alvo ? alvo.x : camera.position.x;
+    const pz = alvo ? alvo.z : camera.position.z;
+
+    const ci = celula(px);
+    const cj = celula(pz);
+
+    if (ci !== centro.current[0] || cj !== centro.current[1]) {
+      centro.current = [ci, cj];
+
+      // Refaz a fila do zero: a lista anterior era relativa a um centro que
+      // já não vale, e insistir nela construiria tiles fora da janela.
+      fila.current = [];
+      for (let di = -TILE_RING; di <= TILE_RING; di++) {
+        for (let dj = -TILE_RING; dj <= TILE_RING; dj++) {
+          const key = `${ci + di}_${cj + dj}`;
+          if (!cacheTiles.has(key)) fila.current.push([ci + di, cj + dj]);
+        }
+      }
+      // Do centro para fora: o que está debaixo do nariz aparece primeiro
+      fila.current.sort(
+        (a, b) =>
+          Math.hypot(a[0] - ci, a[1] - cj) - Math.hypot(b[0] - ci, b[1] - cj),
+      );
+      publicar(ci, cj);
+    }
+
+    if (fila.current.length === 0) return;
+
+    for (let n = 0; n < TILES_POR_QUADRO && fila.current.length > 0; n++) {
+      const [ti, tj] = fila.current.shift()!;
+      cacheTiles.set(`${ti}_${tj}`, buildTile(ti, tj));
+    }
+    publicar(ci, cj);
+  });
 
   return (
     <group>
