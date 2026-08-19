@@ -71,8 +71,13 @@ const TILE_RING = 2;
  * um centro móvel — e densidade que depende de um centro móvel significa que o
  * tile muda de conteúdo quando a grade desliza, o que aparece como grama
  * piscando no chão.
+ *
+ * O valor recupera a densidade que a versão antiga tinha **no centro**
+ * (~1,4 tufos por unidade quadrada). Com 560, o campo cobria mais área mas
+ * ficava visivelmente ralo debaixo da câmera, que é onde a grama é vista de
+ * perto e mais importa.
  */
-const TUFTS_PER_TILE = 560;
+const TUFTS_PER_TILE = 810;
 
 /**
  * Tiles construídos por quadro, no máximo.
@@ -450,6 +455,34 @@ function createGrassUniforms() {
  */
 const cacheTiles = new Map<string, TileData | null>();
 
+/**
+ * Teto do cache.
+ *
+ * Cada tile guarda ~4 mil talos, ou algo como 320 KB de typed arrays. Sem
+ * teto, atravessar a paisagem de ponta a ponta acumularia centenas de tiles e
+ * dezenas de megabytes que nunca mais seriam desenhados. Cinquenta cobre a
+ * grade visível (25) mais o rastro recente, de modo que voltar sobre os
+ * próprios passos ainda reaproveita.
+ */
+const MAX_TILES_CACHE = 50;
+
+/** Descarta os tiles mais distantes do centro quando o cache estoura. */
+function podarCache(ci: number, cj: number): void {
+  if (cacheTiles.size <= MAX_TILES_CACHE) return;
+
+  const porDistancia = [...cacheTiles.keys()]
+    .map((key) => {
+      const [ti, tj] = key.split('_').map(Number);
+      return { key, d: Math.hypot(ti - ci, tj - cj) };
+    })
+    .sort((a, b) => b.d - a.d);
+
+  for (const { key } of porDistancia) {
+    if (cacheTiles.size <= MAX_TILES_CACHE) break;
+    cacheTiles.delete(key);
+  }
+}
+
 /** Coordenada de grade de um ponto do mundo. */
 function celula(v: number): number {
   return Math.floor(v / TILE_SIZE);
@@ -525,6 +558,7 @@ export function Grass() {
         (a, b) =>
           Math.hypot(a[0] - ci, a[1] - cj) - Math.hypot(b[0] - ci, b[1] - cj),
       );
+      podarCache(ci, cj);
       publicar(ci, cj);
     }
 

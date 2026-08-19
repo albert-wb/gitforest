@@ -23,7 +23,6 @@ import { Landscape } from './components/Scene/Landscape';
 import { Particles } from './components/Scene/Particles';
 import { SkyBackground } from './components/Scene/SkyBackground';
 import { CameraGuard } from './components/Scene/CameraGuard';
-import { DebugProbe } from './components/Scene/DebugProbe';
 import { SearchBar } from './components/UI/SearchBar';
 import { InfoPanel } from './components/UI/InfoPanel';
 import { StylePanel } from './components/UI/StylePanel';
@@ -145,7 +144,6 @@ function App() {
         />
 
         <CameraGuard />
-        <DebugProbe />
       </Canvas>
 
       {/* UI Overlay */}
